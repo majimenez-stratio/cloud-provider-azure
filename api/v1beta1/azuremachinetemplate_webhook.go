@@ -56,11 +56,31 @@ func (r *AzureMachineTemplate) ValidateCreate(ctx context.Context, obj runtime.O
 	t := obj.(*AzureMachineTemplate)
 	spec := t.Spec.Template.Spec
 
-	allErrs := ValidateAzureMachineSpec(spec)
+	var allErrs field.ErrorList
+
+	if errs := ValidateImage(spec.Image, field.NewPath("spec", "template", "spec", "image")); len(errs) > 0 {
+		allErrs = append(allErrs, errs...)
+	}
+
+	if errs := ValidateOSDisk(spec.OSDisk, field.NewPath("spec", "template", "spec", "osDisk")); len(errs) > 0 {
+		allErrs = append(allErrs, errs...)
+	}
+
+	if errs := ValidateSSHKey(spec.SSHPublicKey, field.NewPath("spec", "template", "spec", "sshPublicKey")); len(errs) > 0 {
+		allErrs = append(allErrs, errs...)
+	}
+
+	if errs := ValidateUserAssignedIdentity(spec.Identity, spec.UserAssignedIdentities, field.NewPath("spec", "template", "spec", "userAssignedIdentities")); len(errs) > 0 {
+		allErrs = append(allErrs, errs...)
+	}
+
+	if errs := ValidateDataDisks(spec.DataDisks, field.NewPath("dataDisks")); len(errs) > 0 {
+		allErrs = append(allErrs, errs...)
+	}
 
 	if spec.RoleAssignmentName != "" {
 		allErrs = append(allErrs,
-			field.Invalid(field.NewPath("AzureMachineTemplate", "spec", "template", "spec", "roleAssignmentName"), t, AzureMachineTemplateRoleAssignmentNameMsg),
+			field.Invalid(field.NewPath("AzureMachineTemplate", "spec", "template", "spec", "roleAssignmentName"), spec.RoleAssignmentName, AzureMachineTemplateRoleAssignmentNameMsg),
 		)
 	}
 
